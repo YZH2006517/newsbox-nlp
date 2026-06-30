@@ -1,22 +1,51 @@
 # newsbox-nlp
 
-Anomaly attention radar for financial news. Collects news + upstream (SEC / PR / live wires) on
-an ESP32-S3 device, analyzes on PC/SBC, surfaces entities whose mention rate suddenly
-accelerates — designed as an **information advantage tool**, not a price predictor. See
+A financial-news NLP pipeline plus an **anomaly attention radar**. Ingests multi-source news
+feeds, extracts structured entities/sectors/events, and surfaces the subjects whose mention
+rate is suddenly accelerating — designed as an **information-advantage tool** for noticing
+who's getting talked about more, not a price predictor. See
 [`ROADMAP.md`](ROADMAP.md) for the full strategy and rationale.
+
+## What it ingests
+Out of the box, six **upstream** sources (filings / PR wires / live tickers, considered
+the "leading" tier):
+- **SEC EDGAR** (8-K filings, US company actions)
+- **GlobeNewswire** / **PRNewswire** (corporate press wires)
+- **Wallstreetcn** (Chinese live financial newswire, global + A-share channels)
+- **Eastmoney live** (Chinese A-share fast news)
+
+…plus a handful of **mainstream** feeds (lagging tier, for confirmation/context):
+HackerNews, 36Kr, IT之家, Sina Finance, Sina Stock roll, Guardian (business/world/tech).
+
+Each item is just a JSONL line — `{time, source, lang, title, url, summary}` — so adding a
+new source means writing one parser and one URL.
+
+## What it produces
+For every news item, four structured fields:
+- `entities` — companies / organizations, with stock code + exchange when a dictionary
+  match is found (combined spaCy NER + substring match against an A-share + US-ticker
+  dictionary; ~16k tickers built by `lab/build_dict.py`)
+- `sectors` — controlled vocabulary of industry / theme tags
+- `events` — controlled vocabulary of event types (financing, IPO, earnings, M&A,
+  regulation, …)
+- `keywords` — residual high-signal terms after stopword + POS filtering
+
+On top of that, **`radar.py`** computes an EWMA z-score per entity per day, in two separate
+tracks (upstream vs. news), and ranks subjects whose recent mentions are accelerating
+against their own baseline.
 
 ## Project layout
 ```
 newsbox-nlp/
 ├── start.bat          One-click launcher (Windows + WSL)
 ├── ROADMAP.md         Strategy, decisions, open questions
-├── device/            Analysis core — designed to run on the SBC (Cubie A7A) later
+├── device/            Analysis core (portable to any Linux/SBC: pip install + run)
 │   ├── main.py         pipeline: pull → analyze → store
 │   ├── analyze.py      NLP: dictionary + spaCy NER + sectors/events
 │   ├── radar.py        Acceleration ranking (EWMA z-score, dual track)
 │   ├── data/           Dictionaries (companies.csv, stopwords, sectors, events)
 │   └── store/          analyzed.jsonl  (gitignored runtime output)
-├── lab/               NLP improvement workbench (not deployed to device)
+├── lab/               NLP improvement workbench (not deployed)
 │   ├── build_dict.py   Pull A-share + US tickers → data/companies.csv
 │   ├── eval.py         Coverage / quality eval
 │   └── notes.md
@@ -65,7 +94,8 @@ Or manually:
 ```
 
 ## How it works
-1. `device/main.py` reads raw JSONL (from `--from-file <data_dir>` or pulled from the ESP32 device)
+1. `device/main.py` reads raw JSONL (via `--from-file <data_dir>`, or pulled over WiFi/USB
+   from an external collector — see `fetch_from_board` / `fetch_from_usb`)
    → runs `analyze.py` → appends to `device/store/analyzed.jsonl`.
 2. `panel/server.py` on startup checks if raw data is newer than the analyzed cache; if so,
    re-runs the analysis. Builds a SQLite index for fast API queries.
