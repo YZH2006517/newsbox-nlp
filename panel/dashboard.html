@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>newsbox</title>
+<style>
+:root{--bg:#fafaf7;--surface:#fff;--surface2:#f1efe8;--border:rgba(0,0,0,.1);--text:#1a1a18;--text2:#5f5e5a;--text3:#9a988f;
+--info-bg:#e6f1fb;--info:#185fa5;--success-bg:#eaf3de;--success:#3b6d11;--warning-bg:#faeeda;--warning:#854f0b;--radius:10px}
+@media(prefers-color-scheme:dark){:root{--bg:#1c1c1a;--surface:#252523;--surface2:#2f2f2c;--border:rgba(255,255,255,.12);--text:#ececea;--text2:#b4b2a9;--text3:#7a7873;
+--info-bg:#0c2740;--info:#85b7eb;--success-bg:#1b2c10;--success:#97c459;--warning-bg:#2e2208;--warning:#ef9f27}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.6}
+.app{display:flex;gap:16px;max-width:1280px;margin:0 auto;padding:20px;min-height:100vh;align-items:flex-start}
+nav{width:150px;flex-shrink:0;position:sticky;top:20px}
+.brand{font-size:15px;font-weight:500;padding:6px 10px 18px}
+.nav-item{display:block;width:100%;text-align:left;border:none;background:none;font-family:inherit;font-size:14px;color:var(--text2);padding:10px 12px;border-radius:var(--radius);cursor:pointer;margin-bottom:3px}
+.nav-item:hover{background:var(--surface2)}
+.nav-item.active{background:var(--info-bg);color:var(--info)}
+main{flex:1;min-width:0}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.pill{font-size:12px;padding:4px 10px;border-radius:var(--radius);background:var(--surface2);color:var(--text2)}
+.pill.on{background:var(--info-bg);color:var(--info);font-weight:500}
+button.act{font-size:13px;padding:6px 16px;border-radius:var(--radius);border:.5px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer}
+button.act:hover{background:var(--surface2)}
+.page{display:none}.page.on{display:block}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.mc{background:var(--surface2);border-radius:var(--radius);padding:12px 14px}
+.mc .l{font-size:12px;color:var(--text2)}.mc .v{font-size:24px;font-weight:500;margin-top:3px}
+.card{background:var(--surface);border:.5px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:14px}
+.h{font-size:15px;font-weight:500;margin:0 0 10px}
+.wrap{position:relative;width:100%}
+.row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--radius);cursor:pointer}
+.row:hover{background:var(--surface2)}
+.bart{flex:1;height:9px;background:var(--surface2);border-radius:5px;overflow:hidden}
+.barf{height:9px;border-radius:5px}
+.chip{display:inline-flex;align-items:center;font-size:12px;padding:2px 9px;border-radius:var(--radius);margin:2px 6px 2px 0;white-space:nowrap;cursor:pointer}
+.c-co{background:var(--info-bg);color:var(--info)}.c-se{background:var(--success-bg);color:var(--success)}.c-ev{background:var(--warning-bg);color:var(--warning)}.c-kw{background:var(--surface2);color:var(--text3)}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--text3)}
+.lnk{font-size:13px;color:var(--info);cursor:pointer}
+.nw{padding:11px 0;border-top:.5px solid var(--border)}
+.nw .m{font-size:12px;color:var(--text3);margin-bottom:3px}
+.nw a.t,.nw .t{font-size:14px;font-weight:500;line-height:1.5;color:var(--text);text-decoration:none;display:inline-block}
+.nw a.t:hover{color:var(--info);text-decoration:underline}
+.badge{font-size:11px;padding:1px 6px;border-radius:5px;background:var(--surface2);color:var(--text3)}
+.empty{color:var(--text3);padding:20px 0;font-size:13px}
+.seg{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--text2);margin-bottom:10px}
+.dot{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:-1px}
+.scroll{max-height:none}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav>
+    <button class="nav-item active" data-p="radar">加速榜</button>
+    <button class="nav-item" data-p="overview">概览</button>
+    <button class="nav-item" data-p="feed">新闻流</button>
+    <button class="nav-item" data-p="companies">公司</button>
+    <button class="nav-item" data-p="sectors">板块</button>
+    <button class="nav-item" data-p="events">事件</button>
+  </nav>
+  <main>
+    <div class="top">
+      <span class="pill">近 7 天</span>
+      <div style="flex:1"></div>
+      <span style="font-size:12px;color:var(--text3)" id="status">加载中…</span>
+      <button class="act" onclick="rebuild()">重新载入</button>
+    </div>
+
+    <section class="page on" data-page="radar">
+      <div class="card" style="border-color:var(--warning)">
+        <p class="h">提及加速榜</p>
+        <div class="seg" id="radarmeta"></div>
+        <div style="display:flex;gap:8px;margin:4px 0 8px">
+          <span class="pill rtier on" data-tier="up" style="cursor:pointer">上游榜（领先）</span>
+          <span class="pill rtier" data-tier="news" style="cursor:pointer">新闻榜（确认）</span>
+        </div>
+        <div style="display:flex;gap:8px;margin:0 0 12px">
+          <span class="pill rtab on" data-coded="1" style="cursor:pointer">可交易（带代码）</span>
+          <span class="pill rtab" data-coded="0" style="cursor:pointer">全部</span>
+        </div>
+        <div id="radarlist"></div>
+      </div>
+    </section>
+
+    <section class="page" data-page="overview">
+      <div class="kpis" id="kpis"></div>
+      <div class="card"><p class="h">近 7 天新闻量</p><div class="wrap" style="height:170px"><canvas id="cVol" role="img" aria-label="近7天每日新闻量"></canvas></div></div>
+      <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><p class="h" style="margin:0">今日热门公司</p><span class="lnk" data-go="companies">查看全部</span></div><div id="hotco"></div></div>
+    </section>
+
+    <section class="page" data-page="feed">
+      <div class="seg" id="feedmeta"></div>
+      <div id="feedlist" class="scroll"></div>
+    </section>
+
+    <section class="page" data-page="companies">
+      <p class="h" style="margin-left:4px">公司提及排行榜 · 累计总热度 <span id="cocount" style="color:var(--text3);font-size:13px"></span></p><div id="colb"></div>
+    </section>
+
+    <section class="page" data-page="sectors">
+      <div class="card"><p class="h">板块热度 · 近 7 天 <span style="color:var(--text3);font-size:12px">点条形查看全部新闻</span></p><div class="wrap" id="secWrap" style="height:360px"><canvas id="cSec" role="img" aria-label="板块热度"></canvas></div></div>
+      <div id="seclist"></div>
+    </section>
+
+    <section class="page" data-page="events">
+      <div class="card"><p class="h">事件类型分布 · 近 7 天</p><div class="seg" id="lgEv"></div><div class="wrap" style="height:240px"><canvas id="cEv" role="img" aria-label="事件类型分布"></canvas></div></div>
+      <div id="evlist"></div>
+    </section>
+
+    <section class="page" data-page="detail"><div id="detailbox"></div></section>
+  </main>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const $=id=>document.getElementById(id),api=p=>fetch(p).then(r=>r.json());
+const dk=matchMedia('(prefers-color-scheme: dark)').matches,TK=dk?'#b4b2a9':'#5f5e5a',GR=dk?'rgba(255,255,255,.08)':'rgba(0,0,0,.06)';
+const CL={co:'#378add',se:'#639922',ev:'#ba7517'},PAL=['#378add','#1d9e75','#d85a30','#7f77dd','#d4537e','#85b7eb','#97c459','#ef9f27','#a32d2d','#534ab7'];
+const OPT=ex=>Object.assign({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}},ex||{});
+const AX={x:{ticks:{color:TK,font:{size:11}},grid:{display:false}},y:{ticks:{color:TK,font:{size:11}},grid:{color:GR},beginAtZero:true}};
+const HBAR={indexAxis:'y',scales:{x:{ticks:{color:TK,font:{size:11}},grid:{color:GR},beginAtZero:true},y:{ticks:{color:TK,font:{size:12}},grid:{display:false}}}};
+const charts={};
+function chart(id,cfg){if(!window.Chart)return;try{if(charts[id])charts[id].destroy();charts[id]=new Chart($(id),cfg)}catch(e){}}
+function badge(ex){return ex?`<span class="badge">${({SH:'沪',SZ:'深',US:'美'})[ex]||ex}</span>`:''}
+function bar(p,c){return `<div class="bart"><div class="barf" style="width:${p}%;background:${c}"></div></div>`}
+function fmtTs(ts){return ts?new Date(ts*1000).toLocaleString('zh',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):''}
+const UPSRC={'sec-edgar':1,'globenewswire':1,'prnewswire':1,'wallstreetcn':1,'wscn-astock':1,'dongcai-kx':1};
+function srcLabel(s){return s+(UPSRC[s]?' <span style="color:var(--warning)">· 上游</span>':'')}
+function newsRow(n){const t=n.url?`<a class="t" href="${n.url}" target="_blank" rel="noopener">${n.title}</a>`:`<span class="t">${n.title}</span>`;return `<div class="nw"><div class="m">${fmtTs(n.ts)} · ${srcLabel(n.source)}</div>${t}</div>`}
+let cur='radar',prev='radar';const loaded={radar:1};
+
+async function go(p){cur=p;document.querySelectorAll('.page').forEach(s=>s.classList.toggle('on',s.dataset.page==p));document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.p==p));
+ if(loaded[p]||p=='detail')return;loaded[p]=1;
+ if(p=='radar')loadRadar();if(p=='overview')loadOverview();if(p=='feed')loadFeed();if(p=='companies')loadCompanies();if(p=='sectors')loadSectors();if(p=='events')loadEvents()}
+
+async function loadOverview(){const d=await api('/api/overview');
+ $('status').textContent=`共 ${d.total.toLocaleString()} 条`;
+ $('kpis').innerHTML=[['总新闻',d.total.toLocaleString(),''],['今日新增','+'+d.today,'var(--success)'],['公司/机构',d.ncomp,''],['板块',d.nsec,'']].map(([l,v,c])=>`<div class="mc"><div class="l">${l}</div><div class="v" ${c?`style="color:${c}"`:''}>${v}</div></div>`).join('');
+ chart('cVol',{type:'bar',data:{labels:d.vol.map(x=>x.date.slice(5)),datasets:[{data:d.vol.map(x=>x.c),backgroundColor:CL.co,borderRadius:4}]},options:OPT({scales:AX})});
+ const mx=Math.max(1,...d.hot.map(h=>h.c));
+ $('hotco').innerHTML=d.hot.length?d.hot.map((h,i)=>`<div class="row" data-co="${h.name}"><span style="width:14px;color:var(--text3)">${i+1}</span><span style="font-weight:500;width:150px">${h.name}</span><span class="mono">${h.code||''}</span>${bar(Math.round(h.c/mx*100),'var(--info)')}<span style="width:26px;text-align:right">${h.c}</span></div>`).join(''):'<div class="empty">暂无公司实体</div>'}
+
+async function loadFeed(){const d=await api('/api/feed');
+ $('feedmeta').innerHTML=`全部 ${d.total.toLocaleString()} 条新闻（按时间倒序，标题可点开原文）`;
+ const KM={entity:'co',sector:'se',event:'ev',keyword:'kw'},PR={entity:0,sector:1,event:2,keyword:3};
+ $('feedlist').innerHTML=d.items.map(it=>{const tg=it.tags.slice().sort((a,b)=>PR[a.kind]-PR[b.kind]).map(t=>`<span class="chip c-${KM[t.kind]||'kw'}" data-tag="${t.kind}" data-val="${t.value}">${t.value}</span>`).join('');
+  const t=it.url?`<a class="t" href="${it.url}" target="_blank" rel="noopener">${it.title}</a>`:`<span class="t">${it.title}</span>`;
+  return `<div class="nw"><div class="m">${fmtTs(it.ts)} · ${srcLabel(it.source)}</div>${t}<div style="margin-top:5px">${tg||'<span class="chip c-kw">无标签</span>'}</div></div>`}).join('')}
+
+function sparkline(arr,w,h){w=w||80;h=h||20;if(!arr||!arr.length)return '';const mx=Math.max(1,...arr);const pts=arr.map((v,i)=>{const x=arr.length<2?w/2:i/(arr.length-1)*w;const y=h-(v/mx)*(h-2)-1;return `${x.toFixed(1)},${y.toFixed(1)}`}).join(' ');return `<svg width="${w}" height="${h}" style="vertical-align:middle;display:inline-block"><polyline points="${pts}" fill="none" stroke="var(--warning)" stroke-width="1.5"/></svg>`}
+
+let radarTier='up',radarCoded=1;
+async function loadRadar(opts){opts=opts||{};
+ if(opts.tier!==undefined)radarTier=opts.tier;
+ if(opts.coded!==undefined)radarCoded=opts.coded;
+ document.querySelectorAll('.rtier').forEach(t=>t.classList.toggle('on',t.dataset.tier===radarTier));
+ document.querySelectorAll('.rtab').forEach(t=>t.classList.toggle('on',+t.dataset.coded===radarCoded));
+ $('radarlist').innerHTML='<div class="empty">计算中…</div>';
+ const d=await api(`/api/radar?tier=${radarTier}&coded=${radarCoded}`);
+ const lbl={up:'上游榜（领先信号）',news:'新闻榜（已被广播）'}[radarTier]||'全部';
+ $('radarmeta').innerHTML=`${lbl} · 共 ${d.total} 个异常实体 · EWMA z-score（基线自适应）`;
+ $('radarlist').innerHTML=d.items.length?d.items.map((r,i)=>{const up=r.today_up>0?`<span class="chip c-ev" style="margin:0">上游${r.today_up}</span>`:'<span style="width:0"></span>';
+  return `<div class="row" data-co="${r.name}"><span style="width:22px;color:var(--text3)">${i+1}</span><span style="font-weight:500;min-width:120px;max-width:170px">${r.name}</span><span class="mono" style="width:54px">${r.code||''}</span>${up}<span style="flex:1;text-align:center">${sparkline(r.trend,100,22)}</span><span style="width:108px;text-align:right;font-size:12px;line-height:1.3"><div style="color:var(--text3)">今 ${r.today}　基线 ${r.baseline}</div><div style="font-weight:500;color:var(--text)">${r.score} z</div></span></div>`}).join(''):'<div class="empty">暂无异常实体（攒数据中）</div>'}
+
+async function loadCompanies(){const d=await api('/api/companies');
+ $('cocount').textContent=`共 ${d.rank.length} 家`;
+ const mx=Math.max(1,...d.rank.map(r=>r.c));
+ $('colb').innerHTML=d.rank.map((r,i)=>`<div class="row" data-co="${r.name}"><span style="width:24px;color:var(--text3)">${i+1}</span><span style="font-weight:500;min-width:120px;max-width:200px">${r.name}</span>${badge(r.ex)}<span class="mono" style="width:56px">${r.code||''}</span>${bar(Math.round(r.c/mx*100),'var(--info)')}<span style="width:34px;text-align:right">${r.c}</span></div>`).join('')}
+
+async function loadSectors(){const d=await api('/api/sectors');const labels=d.rank.map(r=>r.name);$('secWrap').style.height=Math.max(200,d.rank.length*34+50)+'px';
+ chart('cSec',{type:'bar',data:{labels,datasets:[{data:d.rank.map(r=>r.c),backgroundColor:CL.se,borderRadius:4}]},options:OPT(Object.assign({onClick:(e,el)=>{if(el.length)showTag('sector',labels[el[0].index])}},HBAR))});
+ $('seclist').innerHTML='<p class="h" style="margin:4px 0 6px">点击查看该板块全部新闻：</p>'+d.rank.map(r=>`<span class="chip c-se" data-tag="sector" data-val="${r.name}">${r.name} · ${r.c}</span>`).join('')}
+
+async function loadEvents(){const d=await api('/api/events');const labels=d.rank.map(r=>r.name);const tot=d.rank.reduce((a,b)=>a+b.c,0)||1;
+ $('lgEv').innerHTML=d.rank.map((r,i)=>`<span><span class="dot" style="background:${PAL[i%PAL.length]}"></span>${r.name} ${Math.round(r.c/tot*100)}%</span>`).join('');
+ chart('cEv',{type:'doughnut',data:{labels,datasets:[{data:d.rank.map(r=>r.c),backgroundColor:d.rank.map((r,i)=>PAL[i%PAL.length]),borderWidth:0}]},options:OPT({cutout:'58%',onClick:(e,el)=>{if(el.length)showTag('event',labels[el[0].index])}})});
+ $('evlist').innerHTML='<p class="h" style="margin:14px 0 6px">点击查看该事件全部新闻：</p>'+d.rank.map(r=>`<span class="chip c-ev" data-tag="event" data-val="${r.name}">${r.name} · ${r.c}</span>`).join('')}
+
+async function showTag(kind,value){prev=cur;cur='detail';
+ document.querySelectorAll('.page').forEach(s=>s.classList.toggle('on',s.dataset.page=='detail'));
+ const box=$('detailbox');box.innerHTML='<div class="empty">加载中…</div>';
+ const d=await api(`/api/tag?kind=${kind}&value=${encodeURIComponent(value)}`);
+ const kn={entity:'公司 / 机构',sector:'板块',event:'事件',keyword:'关键词'}[kind]||kind;
+ let extra='';if(kind=='entity'&&((d.sectors||[]).length||(d.events||[]).length))extra=`<div style="margin-bottom:12px">${(d.sectors||[]).map(s=>`<span class="chip c-se" data-tag="sector" data-val="${s}">${s}</span>`).join('')}${(d.events||[]).map(e=>`<span class="chip c-ev" data-tag="event" data-val="${e}">${e}</span>`).join('')}</div>`;
+ box.innerHTML=`<div class="lnk" id="back" style="display:inline-block;padding:4px;margin-bottom:6px">‹ 返回</div>
+  <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px"><span style="font-size:21px;font-weight:500">${value}</span>${kind=='entity'?badge(d.ex):''}${d.code?`<span class="mono" style="font-size:13px">${d.code}</span>`:''}<span class="badge">${kn}</span></div>
+  ${extra}
+  <div class="card"><p class="h">提及趋势 · 近 7 天</p><div class="wrap" style="height:180px"><canvas id="cTag" role="img" aria-label="${value}趋势"></canvas></div></div>
+  <div class="card"><p class="h">全部相关新闻 ${d.count} 条（标题可点开原文）</p>${d.news.map(newsRow).join('')||'<div class="empty">无</div>'}</div>`;
+ $('back').onclick=()=>go(prev);
+ chart('cTag',{type:'line',data:{labels:d.dates.map(x=>x.slice(5)),datasets:[{data:d.trend,borderColor:CL.co,backgroundColor:'rgba(55,138,221,.12)',fill:true,tension:.35,pointRadius:2,borderWidth:2}]},options:OPT({scales:AX})})}
+
+async function rebuild(){$('status').textContent='检查原始数据中…可能要几分钟,请勿关闭';
+ try{const r=await fetch('/api/rebuild',{method:'POST',signal:AbortSignal.timeout(900000)});
+  const d=await r.json();$('status').textContent=`载入 ${d.loaded} 条${d.reanalyzed?' (已重新分析)':''}`;
+  setTimeout(()=>location.reload(),600)}
+ catch(e){$('status').textContent='失败: '+e.message}}
+document.addEventListener('click',e=>{
+ const rt=e.target.closest('.rtab');if(rt)return loadRadar({coded:+rt.dataset.coded});
+ const rti=e.target.closest('.rtier');if(rti)return loadRadar({tier:rti.dataset.tier});
+ const nv=e.target.closest('.nav-item');if(nv)return go(nv.dataset.p);
+ const g=e.target.closest('[data-go]');if(g)return go(g.dataset.go);
+ const c=e.target.closest('[data-co]');if(c)return showTag('entity',c.dataset.co);
+ const tg=e.target.closest('[data-tag]');if(tg)return showTag(tg.dataset.tag,tg.dataset.val);
+});
+function start(){$('status').textContent='';loadRadar()}
+start();
+</script>
+</body>
+</html>

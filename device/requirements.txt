@@ -1,0 +1,26 @@
+# device运行依赖（x86_64 PC 与 aarch64 板子均有官方 wheel，代码不改可迁）
+# 注意：造词典用的 akshare 属lab依赖，不放这里。
+
+jieba==0.42.1
+scikit-learn==1.5.2
+numpy==1.26.4
+
+# NER（第2层，抓未上市公司/英文公司）。装完还要下模型：
+#   python -m spacy download zh_core_web_sm
+#   python -m spacy download en_core_web_sm
+spacy==3.7.5
+
+# 句向量 / 语义聚类（可选）
+sentence-transformers==3.0.1
+
+# 拉取板子数据：requests=WiFi(GET /news)，pyserial=USB(SINCE 命令)
+requests==2.32.3
+pyserial==3.5
+
+# HTTP 服务（后期，对外提供分析结果）
+fastapi==0.111.0
+uvicorn==0.30.6
+
+# 可选：摘要/LLM 时再放开
+# onnxruntime==1.18.1
+# llama-cpp-python==0.2.90
